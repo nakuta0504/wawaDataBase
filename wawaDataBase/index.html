@@ -406,6 +406,34 @@ body {
 }
 .btn-danger:hover { background: rgba(255, 71, 87, 0.1); }
 
+.tabs {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 12px 20px 0;
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tab-page { display: none; }
+.tab-page.active { display: block; }
+
 .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
 .empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
 .empty-state p { font-size: 15px; }
@@ -534,34 +562,50 @@ body {
       WAWA DB
     </div>
     <div class="header-actions">
-      <button class="btn-icon" onclick="loadFriends()" title="重新整理">↻</button>
-      <button class="btn-icon primary" onclick="openModal()" title="新增">＋</button>
+      <button class="btn-icon" onclick="refreshCurrentTab()" title="重新整理">↻</button>
+      <button class="btn-icon primary" onclick="addNew()" title="新增">＋</button>
       <button class="btn-icon" onclick="doLogout()" title="登出">⏻</button>
     </div>
   </div>
 </header>
 
-<div class="toolbar">
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="搜尋名字、暱稱、備註..." oninput="renderList()">
-  </div>
-  <select class="filter-select" id="cityFilter" onchange="renderList()">
-    <option value="">所有縣市</option>
-  </select>
-  <select class="filter-select" id="roleFilter" onchange="renderList()">
-    <option value="">所有角色</option>
-    <option value="0">0</option>
-    <option value="0.5">0.5</option>
-    <option value="1">1</option>
-  </select>
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('friends')">朋友列表</button>
+  <button class="tab-btn" onclick="switchTab('records')">哇哇紀錄</button>
 </div>
 
-<div class="stats-bar" id="statsBar"></div>
+<!-- ===== 朋友列表分頁 ===== -->
+<div class="tab-page active" id="page-friends">
+  <div class="toolbar">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="搜尋名字、暱稱、備註..." oninput="renderList()">
+    </div>
+    <select class="filter-select" id="cityFilter" onchange="renderList()">
+      <option value="">所有縣市</option>
+    </select>
+    <select class="filter-select" id="roleFilter" onchange="renderList()">
+      <option value="">所有角色</option>
+      <option value="0">0</option>
+      <option value="0.5">0.5</option>
+      <option value="1">1</option>
+    </select>
+  </div>
+  <div class="stats-bar" id="statsBar"></div>
+  <div class="card-list" id="cardList">
+    <div class="loading"><div class="spinner"></div>連線中...</div>
+  </div>
+</div>
 
-<div class="card-list" id="cardList">
-  <div class="loading">
-    <div class="spinner"></div>
-    連線中...
+<!-- ===== 哇哇紀錄分頁 ===== -->
+<div class="tab-page" id="page-records">
+  <div class="toolbar">
+    <div class="search-box">
+      <input type="text" id="recSearchInput" placeholder="搜尋人物、地點、備註..." oninput="renderRecords()">
+    </div>
+  </div>
+  <div class="stats-bar" id="recStatsBar"></div>
+  <div class="card-list" id="recCardList">
+    <div class="loading"><div class="spinner"></div>連線中...</div>
   </div>
 </div>
 
@@ -676,6 +720,85 @@ body {
   </div>
 </div>
 
+<!-- ===== 哇哇紀錄 Modal ===== -->
+<div class="modal-overlay" id="recModalOverlay" onclick="if(event.target===event.currentTarget)closeRecModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="recModalTitle">新增紀錄</span>
+      <button class="modal-close" onclick="closeRecModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="recEditId">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>人物 *</label>
+          <input type="text" id="rPerson" required>
+        </div>
+        <div class="form-group">
+          <label>日期 *</label>
+          <input type="date" id="rDate" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>地點</label>
+        <input type="text" id="rLocation" placeholder="例：台北、他家">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>類型</label>
+          <select id="rType">
+            <option value="">選擇</option>
+            <option value="anal">Anal</option>
+            <option value="just_play">隨便玩</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>安全措施</label>
+          <select id="rCondom">
+            <option value="">選擇</option>
+            <option value="有套">有套</option>
+            <option value="無套">無套</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>PrEP</label>
+          <select id="rPrep">
+            <option value="">選擇</option>
+            <option value="有">有 PrEP</option>
+            <option value="無">無 PrEP</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>方向</label>
+          <select id="rDirection">
+            <option value="">選擇</option>
+            <option value="他哇我">他哇我</option>
+            <option value="我哇他">我哇他</option>
+            <option value="互哇">互哇</option>
+            <option value="無">無</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>備註</label>
+        <textarea id="rNote" placeholder="任何想記的事..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="recDeleteBtn" onclick="deleteRecord()" style="display:none">刪除</button>
+      <button class="btn btn-secondary" onclick="closeRecModal()">取消</button>
+      <button class="btn btn-primary" id="recSaveBtn" onclick="saveRecord()">儲存</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -686,6 +809,7 @@ const SB_URL = 'https://yuarbezrqldakabndyyh.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1YXJiZXpycWxkYWthYm5keXloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMjM1MTQsImV4cCI6MjA5MTY5OTUxNH0.fRwgQvfocSwgJPPOVvgi_XkObbuIup45xdZpQOR-d8U';
 const AUTH_URL = `${SB_URL}/auth/v1`;
 const API = `${SB_URL}/rest/v1/friends`;
+const REC_API = `${SB_URL}/rest/v1/wawa_records`;
 
 let accessToken = null;
 
@@ -982,6 +1106,187 @@ async function deleteFriend() {
     if (!r.ok) throw new Error(r.status);
     closeModal();
     await loadFriends();
+    showToast('已刪除');
+  } catch (e) {
+    showToast('刪除失敗', true);
+  }
+}
+
+// ═══════════════════════════════
+// Tabs
+// ═══════════════════════════════
+let currentTab = 'friends';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && tab === 'friends') || (i === 1 && tab === 'records'));
+  });
+  document.getElementById('page-friends').classList.toggle('active', tab === 'friends');
+  document.getElementById('page-records').classList.toggle('active', tab === 'records');
+  if (tab === 'records' && recordsData.length === 0) loadRecords();
+}
+
+function refreshCurrentTab() {
+  if (currentTab === 'friends') loadFriends();
+  else loadRecords();
+}
+
+function addNew() {
+  if (currentTab === 'friends') openModal();
+  else openRecModal();
+}
+
+// ═══════════════════════════════
+// Wawa Records Data
+// ═══════════════════════════════
+let recordsData = [];
+
+async function loadRecords() {
+  try {
+    const r = await authFetch(`${REC_API}?select=*&order=date.desc`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    recordsData = await r.json();
+    renderRecords();
+  } catch (e) {
+    console.error(e);
+    showToast('無法載入哇哇紀錄', true);
+    document.getElementById('recCardList').innerHTML =
+      '<div class="empty-state"><div class="icon">⚠️</div><p>連線失敗</p></div>';
+  }
+}
+
+function renderRecords() {
+  const search = document.getElementById('recSearchInput').value.toLowerCase();
+  const filtered = recordsData.filter(r => {
+    if (search) {
+      const hay = [r.person, r.location, r.note, r.type, r.condom, r.wawa_direction]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const list = document.getElementById('recCardList');
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📋</div>
+      <p>${recordsData.length === 0 ? '還沒有紀錄，點右上角 ＋ 新增' : '找不到符合條件的紀錄'}</p></div>`;
+  } else {
+    list.innerHTML = filtered.map(r => {
+      const typeLabel = r.type === 'anal' ? 'Anal' : r.type === 'just_play' ? '隨便玩' : '';
+      return `<div class="card" onclick="openRecModal('${r.id}')">
+        <div class="card-top">
+          <div>
+            <div class="card-name">${esc(r.person)}</div>
+            <div class="card-realname">${r.date || ''}</div>
+          </div>
+          ${typeLabel ? `<span class="card-role ${r.type === 'anal' ? 'role-0' : 'role-05'}">${typeLabel}</span>` : ''}
+        </div>
+        <div class="card-meta">
+          ${r.location ? `<span>📍 ${esc(r.location)}</span>` : ''}
+          ${r.condom ? `<span>${r.condom === '有套' ? '🛡️' : '⚠️'} ${r.condom}</span>` : ''}
+          ${r.prep ? `<span>💊 PrEP: ${r.prep}</span>` : ''}
+          ${r.wawa_direction ? `<span>🔄 ${esc(r.wawa_direction)}</span>` : ''}
+        </div>
+        ${r.note ? `<div class="card-note">💬 ${esc(r.note)}</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('recStatsBar').innerHTML = `
+    <span class="stat-item">共 <strong>${recordsData.length}</strong> 筆</span>
+    <span class="stat-item">顯示 <strong>${filtered.length}</strong></span>`;
+}
+
+// ═══════════════════════════════
+// Records Modal
+// ═══════════════════════════════
+function openRecModal(id) {
+  document.getElementById('recModalOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  if (id) {
+    const r = recordsData.find(x => x.id === id);
+    if (!r) return;
+    document.getElementById('recModalTitle').textContent = '編輯紀錄';
+    document.getElementById('recEditId').value = r.id;
+    document.getElementById('rPerson').value = r.person || '';
+    document.getElementById('rDate').value = r.date || '';
+    document.getElementById('rLocation').value = r.location || '';
+    document.getElementById('rType').value = r.type || '';
+    document.getElementById('rCondom').value = r.condom || '';
+    document.getElementById('rPrep').value = r.prep || '';
+    document.getElementById('rDirection').value = r.wawa_direction || '';
+    document.getElementById('rNote').value = r.note || '';
+    document.getElementById('recDeleteBtn').style.display = 'block';
+  } else {
+    document.getElementById('recModalTitle').textContent = '新增紀錄';
+    document.getElementById('recEditId').value = '';
+    document.querySelectorAll('#recModalOverlay input:not([type=hidden]), #recModalOverlay select, #recModalOverlay textarea')
+      .forEach(el => el.value = '');
+    document.getElementById('rDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('recDeleteBtn').style.display = 'none';
+  }
+}
+
+function closeRecModal() {
+  document.getElementById('recModalOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+async function saveRecord() {
+  const person = document.getElementById('rPerson').value.trim();
+  const date = document.getElementById('rDate').value;
+  if (!person) { showToast('請填寫人物'); return; }
+  if (!date) { showToast('請填寫日期'); return; }
+
+  const btn = document.getElementById('recSaveBtn');
+  btn.disabled = true;
+  btn.textContent = '儲存中...';
+
+  const entry = {
+    person,
+    date,
+    location: document.getElementById('rLocation').value.trim() || null,
+    type: document.getElementById('rType').value || null,
+    condom: document.getElementById('rCondom').value || null,
+    prep: document.getElementById('rPrep').value || null,
+    wawa_direction: document.getElementById('rDirection').value || null,
+    note: document.getElementById('rNote').value.trim() || null,
+  };
+
+  try {
+    const editId = document.getElementById('recEditId').value;
+    if (editId) {
+      entry.updated_at = new Date().toISOString();
+      const r = await authFetch(`${REC_API}?id=eq.${editId}`, { method: 'PATCH', body: JSON.stringify(entry) });
+      if (!r.ok) throw new Error((await r.json()).message || r.status);
+      showToast('已更新 ✓');
+    } else {
+      const r = await authFetch(REC_API, { method: 'POST', body: JSON.stringify(entry) });
+      if (!r.ok) throw new Error((await r.json()).message || r.status);
+      showToast('已新增 ✓');
+    }
+    closeRecModal();
+    await loadRecords();
+  } catch (e) {
+    console.error(e);
+    showToast('儲存失敗：' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '儲存';
+  }
+}
+
+async function deleteRecord() {
+  const id = document.getElementById('recEditId').value;
+  if (!id || !confirm('確定要刪除嗎？')) return;
+  try {
+    const r = await authFetch(`${REC_API}?id=eq.${id}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(r.status);
+    closeRecModal();
+    await loadRecords();
     showToast('已刪除');
   } catch (e) {
     showToast('刪除失敗', true);
