@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Friends DB</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0c;
+  --surface: #141418;
+  --surface2: #1c1c22;
+  --surface3: #24242c;
+  --border: #2a2a34;
+  --text: #e8e6f0;
+  --text2: #9896a8;
+  --accent: #6c63ff;
+  --accent2: #8b83ff;
+  --danger: #ff4757;
+  --success: #2ed573;
+  --tag0: #ff6b81;
+  --tag05: #a29bfe;
+  --tag1: #55efc4;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font: 'Noto Sans TC', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10, 10, 12, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 20px;
+}
+
+.header-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--success);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--success);
+  transition: all 0.3s;
+}
+
+.logo-dot.offline { background: var(--danger); box-shadow: 0 0 12px var(--danger); }
+
+.header-actions { display: flex; gap: 8px; }
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover { background: var(--surface2); color: var(--text); }
+.btn-icon.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-icon.primary:hover { background: var(--accent2); }
+
+.toolbar {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-box input:focus { border-color: var(--accent); }
+
+.search-box::before {
+  content: '⌕';
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text2);
+  font-size: 16px;
+}
+
+.filter-select {
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--font);
+  outline: none;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.filter-select:focus { border-color: var(--accent); }
+
+.stats-bar {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px 12px;
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.stat-item { display: flex; align-items: center; gap: 4px; }
+.stat-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text2);
+  font-size: 15px;
+}
+
+.loading .spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.card-list {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+
+.card[data-role="0"]::before { background: var(--tag0); }
+.card[data-role="0.5"]::before { background: var(--tag05); }
+.card[data-role="1"]::before { background: var(--tag1); }
+
+.card:hover {
+  border-color: var(--accent);
+  background: var(--surface2);
+  transform: translateY(-1px);
+}
+
+.card:active { transform: translateY(0); }
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.card-name { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+.card-realname { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+.card-role {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--mono);
+  flex-shrink: 0;
+}
+
+.role-0 { background: rgba(255, 107, 129, 0.15); color: var(--tag0); }
+.role-05 { background: rgba(162, 155, 254, 0.15); color: var(--tag05); }
+.role-1 { background: rgba(85, 239, 196, 0.15); color: var(--tag1); }
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.card-meta span { display: flex; align-items: center; gap: 4px; }
+
+.card-note {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text2);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-overlay.active { display: flex; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.modal {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 600px;
+  max-height: 92vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+  border: 1px solid var(--border);
+  border-bottom: none;
+}
+
+@media (min-width: 640px) {
+  .modal-overlay { align-items: center; }
+  .modal {
+    border-radius: var(--radius);
+    max-height: 85vh;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+.modal-header {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  padding: 20px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+}
+
+.modal-title { font-size: 18px; font-weight: 700; }
+
+.modal-close {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover { background: var(--surface3); color: var(--text); }
+
+.modal-body { padding: 16px 20px 24px; }
+
+.form-group { margin-bottom: 16px; }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { border-color: var(--accent); }
+
+.form-group textarea { resize: vertical; min-height: 60px; }
+
+.modal-actions {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--accent2); }
+.btn-secondary { background: var(--surface2); color: var(--text); }
+.btn-secondary:hover { background: var(--surface3); }
+.btn-danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+  flex: 0 0 auto;
+  padding: 12px 20px;
+}
+.btn-danger:hover { background: rgba(255, 71, 87, 0.1); }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
+.empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+.empty-state p { font-size: 15px; }
+
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  color: var(--text);
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 300;
+  pointer-events: none;
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { border-color: var(--danger); color: var(--danger); }
+
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 16px;
+}
+
+.login-box h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.login-box .form-group { margin-bottom: 16px; }
+
+.login-box input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.login-box input:focus { border-color: var(--accent); }
+
+.login-box .btn-primary {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.login-box .btn-primary:hover { background: var(--accent2); }
+.login-box .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.login-error {
+  color: var(--danger);
+  font-size: 13px;
+  text-align: center;
+  margin-top: 12px;
+  min-height: 20px;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+@media (max-width: 480px) {
+  .form-row { grid-template-columns: 1fr; }
+  .card-meta { gap: 4px 10px; }
+}
+</style>
+</head>
+<body>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>Friends DB</h2>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="your@email.com">
+    </div>
+    <div class="form-group">
+      <label>密碼</label>
+      <input type="password" id="loginPassword" placeholder="輸入密碼" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-primary" id="loginBtn" onclick="doLogin()">登入</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-dot" id="statusDot"></span>
+      Friends DB
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="loadFriends()" title="重新整理">↻</button>
+      <button class="btn-icon primary" onclick="openModal()" title="新增">＋</button>
+      <button class="btn-icon" onclick="doLogout()" title="登出">⏻</button>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="搜尋名字、暱稱、備註..." oninput="renderList()">
+  </div>
+  <select class="filter-select" id="cityFilter" onchange="renderList()">
+    <option value="">所有縣市</option>
+  </select>
+  <select class="filter-select" id="roleFilter" onchange="renderList()">
+    <option value="">所有角色</option>
+    <option value="0">0</option>
+    <option value="0.5">0.5</option>
+    <option value="1">1</option>
+  </select>
+</div>
+
+<div class="stats-bar" id="statsBar"></div>
+
+<div class="card-list" id="cardList">
+  <div class="loading">
+    <div class="spinner"></div>
+    連線中...
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">新增朋友</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>暱稱 *</label>
+          <input type="text" id="fNickname" required>
+        </div>
+        <div class="form-group">
+          <label>真實名字</label>
+          <input type="text" id="fRealName">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>縣市</label>
+          <select id="fCity">
+            <option value="">選擇縣市</option>
+            <option>台北市</option><option>新北市</option>
+            <option>基隆市</option><option>桃園市</option>
+            <option>新竹市</option><option>新竹縣</option>
+            <option>苗栗縣</option><option>台中市</option>
+            <option>彰化縣</option><option>南投縣</option>
+            <option>雲林縣</option><option>嘉義市</option>
+            <option>嘉義縣</option><option>台南市</option>
+            <option>高雄市</option><option>屏東縣</option>
+            <option>宜蘭縣</option><option>花蓮縣</option>
+            <option>台東縣</option><option>澎湖縣</option>
+            <option>金門縣</option><option>連江縣</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>區域</label>
+          <input type="text" id="fDistrict" placeholder="例：大安區">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>職業</label>
+        <input type="text" id="fOccupation">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>IG ID</label>
+          <input type="text" id="fIgId" placeholder="@username">
+        </div>
+        <div class="form-group">
+          <label>X ID</label>
+          <input type="text" id="fXId" placeholder="@username">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>出生日</label>
+          <input type="date" id="fBirthday">
+        </div>
+        <div class="form-group">
+          <label>角色</label>
+          <select id="fRole">
+            <option value="">選擇</option>
+            <option value="0">0</option>
+            <option value="0.5">0.5</option>
+            <option value="1">1</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>身高 (cm)</label>
+          <input type="number" id="fHeight" step="0.1" placeholder="170">
+        </div>
+        <div class="form-group">
+          <label>體重 (kg)</label>
+          <input type="number" id="fWeight" step="0.1" placeholder="65">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>體型</label>
+          <input type="text" id="fBodyType" placeholder="例：偏瘦、標準、壯">
+        </div>
+        <div class="form-group">
+          <label>wawa 次數</label>
+          <input type="number" id="fWawaCount" min="0" value="0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>備註</label>
+        <textarea id="fNote" placeholder="任何想記的事..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="deleteBtn" onclick="deleteFriend()" style="display:none">刪除</button>
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveFriend()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════
+// Supabase Config
+// ═══════════════════════════════
+const SB_URL = 'https://yuarbezrqldakabndyyh.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1YXJiZXpycWxkYWthYm5keXloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMjM1MTQsImV4cCI6MjA5MTY5OTUxNH0.fRwgQvfocSwgJPPOVvgi_XkObbuIup45xdZpQOR-d8U';
+const AUTH_URL = `${SB_URL}/auth/v1`;
+const API = `${SB_URL}/rest/v1/friends`;
+
+let accessToken = null;
+
+function getHeaders() {
+  return {
+    'apikey': SB_KEY,
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+}
+
+// ═══════════════════════════════
+// Auth
+// ═══════════════════════════════
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+
+  if (!email || !password) { errEl.textContent = '請填寫 Email 和密碼'; return; }
+
+  btn.disabled = true;
+  btn.textContent = '登入中...';
+  errEl.textContent = '';
+
+  try {
+    const r = await fetch(`${AUTH_URL}/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error_description || data.msg || '登入失敗');
+
+    accessToken = data.access_token;
+    localStorage.setItem('sb_access', data.access_token);
+    localStorage.setItem('sb_refresh', data.refresh_token);
+
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadFriends();
+  } catch (e) {
+    errEl.textContent = e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '登入';
+  }
+}
+
+function doLogout() {
+  accessToken = null;
+  localStorage.removeItem('sb_access');
+  localStorage.removeItem('sb_refresh');
+  document.getElementById('loginOverlay').style.display = '';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').textContent = '';
+}
+
+async function tryRestoreSession() {
+  const refresh = localStorage.getItem('sb_refresh');
+  if (!refresh) return false;
+
+  try {
+    const r = await fetch(`${AUTH_URL}/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refresh })
+    });
+    if (!r.ok) throw new Error('refresh failed');
+    const data = await r.json();
+    accessToken = data.access_token;
+    localStorage.setItem('sb_access', data.access_token);
+    localStorage.setItem('sb_refresh', data.refresh_token);
+    return true;
+  } catch {
+    localStorage.removeItem('sb_access');
+    localStorage.removeItem('sb_refresh');
+    return false;
+  }
+}
+
+// ═══════════════════════════════
+// Data
+// ═══════════════════════════════
+let friendsData = [];
+
+async function loadFriends() {
+  try {
+    const r = await fetch(`${API}?select=*&order=created_at.desc`, { headers: getHeaders() });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    friendsData = await r.json();
+    document.getElementById('statusDot').classList.remove('offline');
+    renderList();
+  } catch (e) {
+    console.error(e);
+    document.getElementById('statusDot').classList.add('offline');
+    showToast('無法連線到資料庫', true);
+    document.getElementById('cardList').innerHTML =
+      '<div class="empty-state"><div class="icon">⚠️</div><p>連線失敗，請檢查網路</p></div>';
+  }
+}
+
+// ═══════════════════════════════
+// Render
+// ═══════════════════════════════
+function renderList() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const cityF = document.getElementById('cityFilter').value;
+  const roleF = document.getElementById('roleFilter').value;
+
+  const filtered = friendsData.filter(f => {
+    if (cityF && f.city !== cityF) return false;
+    if (roleF !== '' && String(f.role) !== roleF) return false;
+    if (search) {
+      const hay = [f.real_name, f.nickname, f.note, f.occupation, f.district, f.ig_id, f.x_id]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const list = document.getElementById('cardList');
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📋</div>
+      <p>${friendsData.length === 0 ? '還沒有資料，點右上角 ＋ 新增' : '找不到符合條件的資料'}</p></div>`;
+  } else {
+    list.innerHTML = filtered.map(f => {
+      const rn = parseFloat(f.role);
+      const rc = rn === 0 ? 'role-0' : rn === 0.5 ? 'role-05' : rn === 1 ? 'role-1' : '';
+      const age = f.birthday ? calcAge(f.birthday) : null;
+      const name = f.nickname || f.real_name;
+      const sub = f.nickname && f.real_name ? f.real_name : '';
+
+      return `<div class="card" data-role="${f.role}" onclick="openModal('${f.id}')">
+        <div class="card-top">
+          <div>
+            <div class="card-name">${esc(name)}</div>
+            ${sub ? `<div class="card-realname">${esc(sub)}</div>` : ''}
+          </div>
+          ${f.role != null ? `<span class="card-role ${rc}">${f.role}</span>` : ''}
+        </div>
+        <div class="card-meta">
+          ${f.city ? `<span>📍 ${esc(f.city)}${f.district ? ' ' + esc(f.district) : ''}</span>` : ''}
+          ${f.occupation ? `<span>💼 ${esc(f.occupation)}</span>` : ''}
+          ${age != null ? `<span>🎂 ${age}歲</span>` : ''}
+          ${f.height ? `<span>📏 ${f.height}cm</span>` : ''}
+          ${f.wawa_count ? `<span style="font-family:var(--mono)">🔄 ×${f.wawa_count}</span>` : ''}
+        </div>
+        ${f.note ? `<div class="card-note">💬 ${esc(f.note)}</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // Stats
+  document.getElementById('statsBar').innerHTML = `
+    <span class="stat-item">共 <strong>${friendsData.length}</strong> 人</span>
+    <span class="stat-item">顯示 <strong>${filtered.length}</strong></span>
+    <span class="stat-item"><span class="stat-dot" style="background:var(--tag0)"></span>${friendsData.filter(f=>parseFloat(f.role)===0).length}</span>
+    <span class="stat-item"><span class="stat-dot" style="background:var(--tag05)"></span>${friendsData.filter(f=>parseFloat(f.role)===0.5).length}</span>
+    <span class="stat-item"><span class="stat-dot" style="background:var(--tag1)"></span>${friendsData.filter(f=>parseFloat(f.role)===1).length}</span>`;
+
+  // City filter
+  const cs = document.getElementById('cityFilter');
+  const cv = cs.value;
+  const cities = [...new Set(friendsData.map(f => f.city).filter(Boolean))].sort();
+  cs.innerHTML = '<option value="">所有縣市</option>' + cities.map(c => `<option ${c===cv?'selected':''}>${c}</option>`).join('');
+}
+
+function calcAge(b) {
+  const d = new Date(b), t = new Date();
+  let a = t.getFullYear() - d.getFullYear();
+  if (t.getMonth() < d.getMonth() || (t.getMonth() === d.getMonth() && t.getDate() < d.getDate())) a--;
+  return a;
+}
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ═══════════════════════════════
+// Modal
+// ═══════════════════════════════
+function openModal(id) {
+  document.getElementById('modalOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  if (id) {
+    const f = friendsData.find(x => x.id === id);
+    if (!f) return;
+    document.getElementById('modalTitle').textContent = '編輯朋友';
+    document.getElementById('editId').value = f.id;
+    document.getElementById('fNickname').value = f.nickname || '';
+    document.getElementById('fRealName').value = f.real_name || '';
+    document.getElementById('fCity').value = f.city || '';
+    document.getElementById('fDistrict').value = f.district || '';
+    document.getElementById('fOccupation').value = f.occupation || '';
+    document.getElementById('fIgId').value = f.ig_id || '';
+    document.getElementById('fXId').value = f.x_id || '';
+    document.getElementById('fBirthday').value = f.birthday || '';
+    document.getElementById('fRole').value = f.role != null ? String(f.role) : '';
+    document.getElementById('fHeight').value = f.height || '';
+    document.getElementById('fWeight').value = f.weight || '';
+    document.getElementById('fBodyType').value = f.body_type || '';
+    document.getElementById('fWawaCount').value = f.wawa_count || 0;
+    document.getElementById('fNote').value = f.note || '';
+    document.getElementById('deleteBtn').style.display = 'block';
+  } else {
+    document.getElementById('modalTitle').textContent = '新增朋友';
+    document.getElementById('editId').value = '';
+    document.querySelectorAll('.modal input:not([type=hidden]), .modal select, .modal textarea')
+      .forEach(el => el.value = '');
+    document.getElementById('fWawaCount').value = 0;
+    document.getElementById('deleteBtn').style.display = 'none';
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function handleOverlayClick(e) { if (e.target === e.currentTarget) closeModal(); }
+
+async function saveFriend() {
+  const nickname = document.getElementById('fNickname').value.trim();
+  if (!nickname) { showToast('請填寫暱稱'); return; }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = '儲存中...';
+
+  const rv = document.getElementById('fRole').value;
+  const entry = {
+    nickname,
+    real_name: document.getElementById('fRealName').value.trim() || null,
+    city: document.getElementById('fCity').value || null,
+    district: document.getElementById('fDistrict').value.trim() || null,
+    occupation: document.getElementById('fOccupation').value.trim() || null,
+    ig_id: document.getElementById('fIgId').value.trim() || null,
+    x_id: document.getElementById('fXId').value.trim() || null,
+    birthday: document.getElementById('fBirthday').value || null,
+    role: rv !== '' ? parseFloat(rv) : null,
+    height: parseFloat(document.getElementById('fHeight').value) || null,
+    weight: parseFloat(document.getElementById('fWeight').value) || null,
+    body_type: document.getElementById('fBodyType').value.trim() || null,
+    wawa_count: parseInt(document.getElementById('fWawaCount').value) || 0,
+    note: document.getElementById('fNote').value.trim() || null,
+  };
+
+  try {
+    const editId = document.getElementById('editId').value;
+    if (editId) {
+      entry.updated_at = new Date().toISOString();
+      const r = await fetch(`${API}?id=eq.${editId}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify(entry) });
+      if (!r.ok) throw new Error((await r.json()).message || r.status);
+      showToast('已更新 ✓');
+    } else {
+      const r = await fetch(API, { method: 'POST', headers: getHeaders(), body: JSON.stringify(entry) });
+      if (!r.ok) throw new Error((await r.json()).message || r.status);
+      showToast('已新增 ✓');
+    }
+    closeModal();
+    await loadFriends();
+  } catch (e) {
+    console.error(e);
+    showToast('儲存失敗：' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '儲存';
+  }
+}
+
+async function deleteFriend() {
+  const id = document.getElementById('editId').value;
+  if (!id || !confirm('確定要刪除嗎？')) return;
+  try {
+    const r = await fetch(`${API}?id=eq.${id}`, { method: 'DELETE', headers: H });
+    if (!r.ok) throw new Error(r.status);
+    closeModal();
+    await loadFriends();
+    showToast('已刪除');
+  } catch (e) {
+    showToast('刪除失敗', true);
+  }
+}
+
+// ═══════════════════════════════
+// Toast
+// ═══════════════════════════════
+function showToast(msg, err = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (err ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+// Init
+(async () => {
+  const restored = await tryRestoreSession();
+  if (restored) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadFriends();
+  }
+})();
+</script>
+</body>
+</html>
