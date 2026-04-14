@@ -774,9 +774,22 @@ async function tryRestoreSession() {
 // ═══════════════════════════════
 let friendsData = [];
 
+async function authFetch(url, opts = {}) {
+  opts.headers = getHeaders();
+  let r = await fetch(url, opts);
+  if (r.status === 401 || r.status === 403) {
+    const refreshed = await tryRestoreSession();
+    if (refreshed) {
+      opts.headers = getHeaders();
+      r = await fetch(url, opts);
+    }
+  }
+  return r;
+}
+
 async function loadFriends() {
   try {
-    const r = await fetch(`${API}?select=*&order=created_at.desc`, { headers: getHeaders() });
+    const r = await authFetch(`${API}?select=*&order=created_at.desc`);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     friendsData = await r.json();
     document.getElementById('statusDot').classList.remove('offline');
@@ -945,11 +958,11 @@ async function saveFriend() {
     const editId = document.getElementById('editId').value;
     if (editId) {
       entry.updated_at = new Date().toISOString();
-      const r = await fetch(`${API}?id=eq.${editId}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify(entry) });
+      const r = await authFetch(`${API}?id=eq.${editId}`, { method: 'PATCH', body: JSON.stringify(entry) });
       if (!r.ok) throw new Error((await r.json()).message || r.status);
       showToast('已更新 ✓');
     } else {
-      const r = await fetch(API, { method: 'POST', headers: getHeaders(), body: JSON.stringify(entry) });
+      const r = await authFetch(API, { method: 'POST', body: JSON.stringify(entry) });
       if (!r.ok) throw new Error((await r.json()).message || r.status);
       showToast('已新增 ✓');
     }
@@ -968,7 +981,7 @@ async function deleteFriend() {
   const id = document.getElementById('editId').value;
   if (!id || !confirm('確定要刪除嗎？')) return;
   try {
-    const r = await fetch(`${API}?id=eq.${id}`, { method: 'DELETE', headers: H });
+    const r = await authFetch(`${API}?id=eq.${id}`, { method: 'DELETE' });
     if (!r.ok) throw new Error(r.status);
     closeModal();
     await loadFriends();
