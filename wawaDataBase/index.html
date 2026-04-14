@@ -627,8 +627,8 @@ body {
 
       <div class="form-row">
         <div class="form-group">
-          <label>出生日</label>
-          <input type="date" id="fBirthday">
+          <label>出生年</label>
+          <input type="number" id="fBirthYear" placeholder="1999" min="1950" max="2010">
         </div>
         <div class="form-group">
           <label>角色</label>
@@ -831,7 +831,7 @@ function renderList() {
     list.innerHTML = filtered.map(f => {
       const rn = parseFloat(f.role);
       const rc = rn === 0 ? 'role-0' : rn === 0.5 ? 'role-05' : rn === 1 ? 'role-1' : '';
-      const age = f.birthday ? calcAge(f.birthday) : null;
+      const age = f.birth_year ? calcAge(f.birth_year) : null;
       const name = f.nickname || f.real_name;
       const sub = f.nickname && f.real_name ? f.real_name : '';
 
@@ -870,11 +870,8 @@ function renderList() {
   cs.innerHTML = '<option value="">所有縣市</option>' + cities.map(c => `<option ${c===cv?'selected':''}>${c}</option>`).join('');
 }
 
-function calcAge(b) {
-  const d = new Date(b), t = new Date();
-  let a = t.getFullYear() - d.getFullYear();
-  if (t.getMonth() < d.getMonth() || (t.getMonth() === d.getMonth() && t.getDate() < d.getDate())) a--;
-  return a;
+function calcAge(birthYear) {
+  return new Date().getFullYear() - birthYear;
 }
 
 function esc(s) {
@@ -903,7 +900,7 @@ function openModal(id) {
     document.getElementById('fOccupation').value = f.occupation || '';
     document.getElementById('fIgId').value = f.ig_id || '';
     document.getElementById('fXId').value = f.x_id || '';
-    document.getElementById('fBirthday').value = f.birthday || '';
+    document.getElementById('fBirthYear').value = f.birth_year || '';
     document.getElementById('fRole').value = f.role != null ? String(f.role) : '';
     document.getElementById('fHeight').value = f.height || '';
     document.getElementById('fWeight').value = f.weight || '';
@@ -945,7 +942,7 @@ async function saveFriend() {
     occupation: document.getElementById('fOccupation').value.trim() || null,
     ig_id: document.getElementById('fIgId').value.trim() || null,
     x_id: document.getElementById('fXId').value.trim() || null,
-    birthday: document.getElementById('fBirthday').value || null,
+    birth_year: parseInt(document.getElementById('fBirthYear').value) || null,
     role: rv !== '' ? parseFloat(rv) : null,
     height: parseFloat(document.getElementById('fHeight').value) || null,
     weight: parseFloat(document.getElementById('fWeight').value) || null,
